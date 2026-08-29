@@ -210,6 +210,56 @@ test('browser bundle finds user actions through the conversation slot wrapper', 
   cleanup()
 })
 
+test('browser bundle tolerates an unavailable session snapshot during header mount', async () => {
+  const source = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
+  let plugin
+  let cleanup
+  class Element {}
+  const context = {
+    AbortController,
+    HTMLElement: Element,
+    MutationObserver: class MutationObserver {
+      observe() {}
+      disconnect() {}
+    },
+    queueMicrotask,
+    setTimeout,
+    document: {
+      body: {},
+      querySelectorAll() { return [] },
+    },
+    window: {
+      __ModuleLoader__: {
+        load(record) {
+          plugin = record.factory((id) => {
+            if (id === 'react/jsx-runtime') return { jsx() {}, jsxs() {}, Fragment: Symbol('fragment') }
+            if (id === 'react') {
+              return {
+                useCallback: value => value,
+                useEffect() {},
+                useLayoutEffect(setup) { cleanup = setup() },
+                useRef: value => ({ current: value }),
+                useState(initial) { return [initial, () => {}] },
+              }
+            }
+            if (id === 'react-dom') return { createPortal: value => value }
+            if (id === '@deepseek-ai/dsh-client-ui-primitives') return { Button() {}, Modal() {}, Tooltip() {} }
+            throw new Error(`unexpected browser dependency ${id}`)
+          })
+        },
+      },
+    },
+  }
+  vm.runInNewContext(source, context)
+
+  assert.doesNotThrow(() => plugin.RewindMessagePortals({
+    sessionId: 'session-loading',
+    async openRestoredSession() {},
+    useSession() { return undefined },
+  }))
+  cleanup()
+})
+
 test('rewind dialog restores files in two modes and allows reviewed Git history drift', async () => {
   const source = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
   const Button = function Button() {}

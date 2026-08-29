@@ -33,7 +33,7 @@ interface RewindMessageActionProps {
 interface RewindPortalBridgeProps {
     readonly sessionId: string;
     readonly openRestoredSession: (sessionId: string, promptText: string) => Promise<void>;
-    readonly useSession: <T>(selector: (snapshot: ConversationSnapshotLike) => T) => T;
+    readonly useSession: <T>(selector: (snapshot: ConversationSnapshotLike) => T) => T | undefined;
 }
 interface SlotsLike {
     inject(name: string, install: () => unknown): void;

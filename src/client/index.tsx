@@ -43,7 +43,7 @@ interface RewindMessageActionProps {
 interface RewindPortalBridgeProps {
   readonly sessionId: string
   readonly openRestoredSession: (sessionId: string, promptText: string) => Promise<void>
-  readonly useSession: <T>(selector: (snapshot: ConversationSnapshotLike) => T) => T
+  readonly useSession: <T>(selector: (snapshot: ConversationSnapshotLike) => T) => T | undefined
 }
 
 interface RewindPortalTarget {
@@ -283,7 +283,7 @@ export function apply(ctx: ClientContextLike): void {
 
 /** Session-scoped bridge that portals rewind controls into direct user-message action rows. */
 export function RewindMessagePortals({ sessionId, openRestoredSession, useSession }: RewindPortalBridgeProps): ReactNode {
-  const nodes = useSession<readonly RewindNodeLike[]>(snapshot => snapshot.chat?.nodes.values() ?? snapshot.nodes)
+  const nodes = useSession<readonly RewindNodeLike[]>(snapshot => snapshot.chat?.nodes.values() ?? snapshot.nodes) ?? []
   const [targets, setTargets] = useState<readonly RewindPortalTarget[]>([])
 
   useLayoutEffect(() => {
